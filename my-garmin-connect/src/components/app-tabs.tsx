@@ -1,12 +1,10 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import React from 'react';
-import { useColorScheme } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = useTheme();
 
   return (
     <NativeTabs
@@ -42,14 +40,6 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'fork.knife', selected: 'fork.knife' }}
           md="restaurant"
-          selectedColor={colors.accent}
-        />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'person.circle', selected: 'person.circle.fill' }}
-          md="account_circle"
           selectedColor={colors.accent}
         />
       </NativeTabs.Trigger>

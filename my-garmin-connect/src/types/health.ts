@@ -3,6 +3,9 @@ export interface HealthToday {
   restingHeartRate: number;
   sleepDurationSeconds: number;
   sleepScore: number;
+  bodyBatteryChange: number;
+  bodyBatteryAtSleep: number;
+  bodyBatteryAtWake: number;
 }
 
 export interface Vitals {
@@ -27,6 +30,33 @@ export interface SleepLevel {
   activityLevel: number;
 }
 
+export interface ScoreDetail {
+  score: number;
+  label: string;
+  detail: string;
+}
+
+export interface ComputedSleepScores {
+  overall: ScoreDetail;
+  duration: ScoreDetail;
+  deep: ScoreDetail;
+  rem: ScoreDetail;
+  light: ScoreDetail;
+  awake: ScoreDetail;
+  stress: ScoreDetail;
+  hrv: ScoreDetail;
+}
+
+export interface TrainingPrediction {
+  recommendedIntensity: 'high' | 'moderate' | 'easy' | 'rest';
+  intensityLabel: string;
+  maxRecommendedDuration: number;
+  warnings: string[];
+  positives: string[];
+  recoveryQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  recoveryDetail: string;
+}
+
 export interface SleepDetail {
   sleepTimeSeconds: number;
   deepSleepSeconds: number;
@@ -46,6 +76,8 @@ export interface SleepDetail {
     awakeCount: SleepScoreComponent | null;
     totalDuration: SleepScoreComponent | null;
   };
+  computedScores: ComputedSleepScores;
+  trainingPrediction: TrainingPrediction;
   averageRespirationValue: number;
   lowestRespirationValue: number;
   highestRespirationValue: number;
@@ -55,10 +87,22 @@ export interface SleepDetail {
   avgOvernightHrv: number;
   hrvStatus: string;
   bodyBatteryChange: number;
+  bodyBatteryAtSleep: number;
+  bodyBatteryAtWake: number;
   avgSleepStress: number;
   restlessMomentsCount: number;
   awakeCount: number;
   sleepLevels: SleepLevel[];
+}
+
+export interface StressData {
+  overallLevel: number;
+  restLevel: number;
+  maxLevel: number;
+  lowDurationSeconds: number;
+  mediumDurationSeconds: number;
+  highDurationSeconds: number;
+  stressQualifier: string;
 }
 
 export interface WeeklyStats {

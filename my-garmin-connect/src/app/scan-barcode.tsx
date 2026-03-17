@@ -5,7 +5,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ScanBarcodeScreen() {
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   hint: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   corner: {
     position: 'absolute',
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   closeX: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   closeButton: {
     paddingHorizontal: Spacing.four,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     color: '#fff',
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     fontSize: 16,
   },
 });

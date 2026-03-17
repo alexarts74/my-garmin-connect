@@ -6,9 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, UtensilsCrossed } from 'lucide-react-native';
 import { MealCard } from '@/components/nutrition/meal-card';
 import { MacroSummary } from '@/components/nutrition/macro-summary';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { BottomTabInset, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useCaloriesBurned } from '@/hooks/use-calories-burned';
 import { useNutrition } from '@/hooks/use-nutrition';
@@ -53,9 +54,7 @@ export default function NutritionScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
-            <ThemedText type="subtitle" style={styles.title}>
-              Nutrition
-            </ThemedText>
+            <ScreenHeader title="Nutrition" titleStyle={styles.title} />
 
             {daily && hasMeals && <MacroSummary daily={daily} caloriesBurned={caloriesBurned} />}
 
@@ -123,7 +122,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   mealsSection: {
     gap: Spacing.three,

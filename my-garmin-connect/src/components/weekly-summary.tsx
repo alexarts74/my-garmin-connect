@@ -85,12 +85,10 @@ const styles = StyleSheet.create({
   },
   statValueHero: {
     fontSize: 24,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
 });

@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { WeeklyTrendData } from '@/types/trends';
 
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   tooltipText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     textAlign: 'center',
   },
 });

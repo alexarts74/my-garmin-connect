@@ -114,16 +114,15 @@ const styles = StyleSheet.create({
   },
   calorieValue: {
     fontSize: 24,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   minus: {
     fontSize: 20,
-    fontWeight: '300',
+    fontFamily: Fonts.regular,
   },
   equals: {
     fontSize: 20,
-    fontWeight: '300',
+    fontFamily: Fonts.regular,
   },
   macros: {
     gap: Spacing.three,
@@ -138,11 +137,10 @@ const styles = StyleSheet.create({
   },
   macroLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   macroValue: {
     fontSize: 13,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
   },
   barBg: {

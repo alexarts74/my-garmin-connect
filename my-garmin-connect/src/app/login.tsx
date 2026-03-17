@@ -19,7 +19,7 @@ import { SymbolView } from 'expo-symbols';
 import { Redirect, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -207,13 +207,13 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: Fonts.extraBold,
     letterSpacing: -1,
     lineHeight: 36,
   },
   brandSubtitle: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   inputGroup: {
     gap: Spacing.three,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginLeft: Spacing.one,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three + 2,
     paddingHorizontal: Spacing.three + 4,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#ffffff',
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     fontSize: 16,
     letterSpacing: 0.3,
   },
@@ -261,6 +261,6 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     textAlign: 'center',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
 });

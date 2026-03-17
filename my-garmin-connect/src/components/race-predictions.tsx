@@ -107,7 +107,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '800',
     fontFamily: Fonts.mono,
   },
   cardContent: {
@@ -115,11 +114,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   time: {
     fontSize: 22,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   pace: {

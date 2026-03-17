@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '@/constants/config';
-import { clearTokens } from '@/lib/token-storage';
+import { clearTokens, saveTokens } from '@/lib/token-storage';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
@@ -31,6 +31,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     });
   } catch (err) {
     throw new ApiError(0, `Network error fetching ${url}: ${err instanceof Error ? err.message : err}`);
+  }
+
+  // Sync refreshed tokens from server
+  const freshTokensHeader = res.headers.get('X-Garmin-Tokens');
+  if (freshTokensHeader) {
+    try {
+      const freshTokens = JSON.parse(freshTokensHeader);
+      await saveTokens(freshTokens);
+    } catch {
+      // Ignore parse errors
+    }
   }
 
   const text = await res.text();

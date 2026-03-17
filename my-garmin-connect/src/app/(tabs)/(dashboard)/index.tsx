@@ -1,22 +1,25 @@
 import React from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BodyBatteryCard } from '@/components/body-battery-card';
 import { HealthCard } from '@/components/health-card';
 import { LastRunCard } from '@/components/last-run-card';
 import { ReadinessCard } from '@/components/readiness-card';
+import { SleepSummaryCard } from '@/components/sleep-summary-card';
+import { StressCard } from '@/components/stress-card';
 import { WeeklySummary } from '@/components/weekly-summary';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useActivities } from '@/hooks/use-activities';
 import { useAuth } from '@/hooks/use-auth';
-import { useHealthToday, useVitals, useWeeklyStats } from '@/hooks/use-health';
+import { useHealthToday, useSleepDetail, useStress, useVitals, useWeeklyStats } from '@/hooks/use-health';
 import { useTrainingLoad } from '@/hooks/use-training-load';
 import { useHRV, useHRRecovery } from '@/hooks/use-healthkit';
 import { useTheme } from '@/hooks/use-theme';
-import { formatSleepDuration } from '@/lib/format';
 
 export default function DashboardScreen() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -24,19 +27,20 @@ export default function DashboardScreen() {
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useHealthToday();
   const { data: vitals, isLoading: vitalsLoading, refetch: refetchVitals } = useVitals();
   const { data: weeklyStats, isLoading: weeklyLoading, refetch: refetchWeekly } = useWeeklyStats();
+  const { data: sleepDetail, refetch: refetchSleep } = useSleepDetail();
+  const { data: stressData, refetch: refetchStress } = useStress();
   const { data: trainingLoad } = useTrainingLoad();
   const { hrv } = useHRV();
   const { recovery: hrRecovery } = useHRRecovery();
 
   const colors = useTheme();
-  const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchActivities(), refetchHealth(), refetchVitals(), refetchWeekly()]);
+    await Promise.all([refetchActivities(), refetchHealth(), refetchVitals(), refetchWeekly(), refetchSleep(), refetchStress()]);
     setRefreshing(false);
-  }, [refetchActivities, refetchHealth, refetchVitals, refetchWeekly]);
+  }, [refetchActivities, refetchHealth, refetchVitals, refetchWeekly, refetchSleep, refetchStress]);
 
   if (authLoading) {
     return (
@@ -70,11 +74,23 @@ export default function DashboardScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }>
           <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
-            <ThemedText type="subtitle" style={styles.greeting}>
-              Dashboard
-            </ThemedText>
+            <ScreenHeader title="Dashboard" titleStyle={styles.greeting} />
 
             {trainingLoad && <ReadinessCard data={trainingLoad} />}
+
+            {sleepDetail && <SleepSummaryCard sleep={sleepDetail} />}
+
+            {health && (health.bodyBatteryAtWake > 0 || health.bodyBatteryChange !== 0) && (
+              <BodyBatteryCard
+                bodyBatteryAtWake={health.bodyBatteryAtWake}
+                bodyBatteryAtSleep={health.bodyBatteryAtSleep}
+                bodyBatteryChange={health.bodyBatteryChange}
+              />
+            )}
+
+            {stressData && stressData.overallLevel > 0 && (
+              <StressCard stress={stressData} />
+            )}
 
             {lastRun && <LastRunCard activity={lastRun} />}
 
@@ -105,12 +121,6 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.healthRow}>
                   <HealthCard
-                    symbolName={{ ios: 'moon.fill', android: 'bedtime', web: 'bedtime' }}
-                    value={formatSleepDuration(health.sleepDurationSeconds)}
-                    label="Sommeil"
-                    onPress={() => router.push('/(dashboard)/sleep')}
-                  />
-                  <HealthCard
                     symbolName={{ ios: 'heart.circle', android: 'monitor_heart', web: 'monitor_heart' }}
                     value={vitals?.restingHeartRate ? `${vitals.restingHeartRate}` : '--'}
                     unit="bpm"
@@ -122,6 +132,7 @@ export default function DashboardScreen() {
                     unit="bpm"
                     label="FC moy. 7j"
                   />
+                  <View style={{ flex: 1 }} />
                 </View>
                 {(hrv.latestSDNN != null || hrRecovery.bpm != null) && (
                   <View style={styles.healthRow}>
@@ -172,7 +183,7 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: Spacing.one,
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   healthSection: {
     gap: Spacing.two,

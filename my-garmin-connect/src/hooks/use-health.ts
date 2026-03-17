@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { get } from '@/lib/api-client';
 import { useAuth } from '@/hooks/use-auth';
-import type { HealthToday, SleepDetail, Vitals, WeeklyStats } from '@/types/health';
+import type { HealthToday, SleepDetail, StressData, Vitals, WeeklyStats } from '@/types/health';
 
 export function useHealthToday() {
   const { isAuthenticated } = useAuth();
@@ -26,6 +26,15 @@ export function useSleepDetail() {
   return useQuery<SleepDetail | null>({
     queryKey: ['health', 'sleep'],
     queryFn: () => get<SleepDetail | null>('/health/sleep'),
+    enabled: isAuthenticated,
+  });
+}
+
+export function useStress() {
+  const { isAuthenticated } = useAuth();
+  return useQuery<StressData | null>({
+    queryKey: ['health', 'stress'],
+    queryFn: () => get<StressData | null>('/health/stress'),
     enabled: isAuthenticated,
   });
 }

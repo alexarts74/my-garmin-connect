@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
   },
   legendValue: {
     fontSize: 14,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
   },
 });

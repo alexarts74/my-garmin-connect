@@ -1,12 +1,15 @@
 import React from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { SleepScoreCard } from '@/components/sleep-score-card';
 import { SleepStagesBar } from '@/components/sleep-stages-bar';
 import { SleepTimeline } from '@/components/sleep-timeline';
 import { StatRow } from '@/components/stat-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TrainingPredictionCard } from '@/components/training-prediction-card';
+import { StressCard } from '@/components/stress-card';
 import { Fonts, Spacing } from '@/constants/theme';
-import { useSleepDetail } from '@/hooks/use-health';
+import { useSleepDetail, useStress } from '@/hooks/use-health';
 import { useTheme } from '@/hooks/use-theme';
 import { formatSleepDuration, formatTime } from '@/lib/format';
 
@@ -34,6 +37,7 @@ function qualifierColor(key: string | undefined, accent: string): string {
 
 export default function SleepDetailScreen() {
   const { data: sleep, isLoading, error } = useSleepDetail();
+  const { data: stressData } = useStress();
   const colors = useTheme();
 
   if (isLoading) {
@@ -55,51 +59,46 @@ export default function SleepDetailScreen() {
   }
 
   const overallQualifier = sleep.sleepScores?.overall?.qualifierKey;
+  const computed = sleep.computedScores;
+  const prediction = sleep.trainingPrediction;
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Hero Score */}
-        <View style={styles.heroSection}>
-          <ThemedText style={styles.heroScore}>
-            {sleep.sleepScore > 0 ? sleep.sleepScore : '--'}
-          </ThemedText>
-          {overallQualifier && (
-            <ThemedText
-              style={[styles.heroLabel, { color: qualifierColor(overallQualifier, colors.accent) }]}
-            >
-              {qualifierLabel(overallQualifier)}
-            </ThemedText>
-          )}
-        </View>
-
-        {/* Duration & Times */}
+        {/* Duration Hero + Score */}
         <ThemedView type="backgroundElement" style={styles.section}>
-          <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
-            Durée
-          </ThemedText>
-          <View style={styles.durationRow}>
-            <View style={styles.durationMain}>
-              <ThemedText style={styles.durationValue}>
-                {formatSleepDuration(sleep.sleepTimeSeconds)}
+          <View style={styles.durationHero}>
+            <ThemedText style={styles.durationValue}>
+              {formatSleepDuration(sleep.sleepTimeSeconds)}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              de sommeil
+            </ThemedText>
+          </View>
+          {sleep.sleepScore > 0 && (
+            <View style={styles.scoreRow}>
+              <ThemedText style={[styles.scoreBadge, { color: qualifierColor(overallQualifier, colors.accent) }]}>
+                {sleep.sleepScore}
               </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                de sommeil
+              {overallQualifier && (
+                <ThemedText style={[styles.scoreLabel, { color: qualifierColor(overallQualifier, colors.accent) }]}>
+                  {qualifierLabel(overallQualifier)}
+                </ThemedText>
+              )}
+            </View>
+          )}
+          <View style={styles.timesRow}>
+            <View style={styles.timeItem}>
+              <ThemedText type="small" themeColor="textSecondary">Coucher</ThemedText>
+              <ThemedText style={styles.timeValue}>
+                {formatTime(sleep.sleepStartTimestampGMT)}
               </ThemedText>
             </View>
-            <View style={styles.times}>
-              <View style={styles.timeItem}>
-                <ThemedText type="small" themeColor="textSecondary">Coucher</ThemedText>
-                <ThemedText style={styles.timeValue}>
-                  {formatTime(sleep.sleepStartTimestampGMT)}
-                </ThemedText>
-              </View>
-              <View style={styles.timeItem}>
-                <ThemedText type="small" themeColor="textSecondary">Lever</ThemedText>
-                <ThemedText style={styles.timeValue}>
-                  {formatTime(sleep.sleepEndTimestampGMT)}
-                </ThemedText>
-              </View>
+            <View style={styles.timeItem}>
+              <ThemedText type="small" themeColor="textSecondary">Lever</ThemedText>
+              <ThemedText style={styles.timeValue}>
+                {formatTime(sleep.sleepEndTimestampGMT)}
+              </ThemedText>
             </View>
           </View>
         </ThemedView>
@@ -131,40 +130,40 @@ export default function SleepDetailScreen() {
           </ThemedView>
         )}
 
-        {/* Detailed Scores */}
-        <ThemedView type="backgroundElement" style={styles.section}>
-          <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
-            Scores détaillés
-          </ThemedText>
-          <StatRow
-            label="Durée totale"
-            value={sleep.sleepScores?.totalDuration?.value != null ? `${sleep.sleepScores.totalDuration.value}` : '--'}
-          />
-          <StatRow
-            label="Sommeil profond"
-            value={sleep.sleepScores?.deepPercentage?.value != null ? `${sleep.sleepScores.deepPercentage.value}` : '--'}
-          />
-          <StatRow
-            label="Sommeil léger"
-            value={sleep.sleepScores?.lightPercentage?.value != null ? `${sleep.sleepScores.lightPercentage.value}` : '--'}
-          />
-          <StatRow
-            label="Sommeil REM"
-            value={sleep.sleepScores?.remPercentage?.value != null ? `${sleep.sleepScores.remPercentage.value}` : '--'}
-          />
-          <StatRow
-            label="Stress"
-            value={sleep.sleepScores?.stress?.value != null ? `${sleep.sleepScores.stress.value}` : '--'}
-          />
-          <StatRow
-            label="Agitation"
-            value={sleep.sleepScores?.restlessness?.value != null ? `${sleep.sleepScores.restlessness.value}` : '--'}
-          />
-          <StatRow
-            label="Réveils"
-            value={sleep.sleepScores?.awakeCount?.value != null ? `${sleep.sleepScores.awakeCount.value}` : '--'}
-          />
-        </ThemedView>
+        {/* Computed Sleep Scores */}
+        {computed && (
+          <ThemedView type="backgroundElement" style={styles.section}>
+            <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
+              Scores détaillés
+            </ThemedText>
+            {/* Overall score hero */}
+            <View style={styles.overallScoreHero}>
+              <SleepScoreCard label="Score global" score={computed.overall} />
+            </View>
+            {/* Score grid */}
+            <View style={styles.scoreGrid}>
+              <SleepScoreCard label="Durée" score={computed.duration} />
+              <SleepScoreCard label="Profond" score={computed.deep} />
+              <SleepScoreCard label="REM" score={computed.rem} />
+              <SleepScoreCard label="Léger" score={computed.light} />
+              <SleepScoreCard label="Éveillé" score={computed.awake} />
+              <SleepScoreCard label="Stress" score={computed.stress} />
+              {computed.hrv.score > 0 && (
+                <SleepScoreCard label="HRV" score={computed.hrv} />
+              )}
+            </View>
+          </ThemedView>
+        )}
+
+        {/* Training Prediction */}
+        {prediction && (
+          <ThemedView type="backgroundElement" style={styles.section}>
+            <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
+              Recommandation entraînement
+            </ThemedText>
+            <TrainingPredictionCard prediction={prediction} />
+          </ThemedView>
+        )}
 
         {/* Vital Signs */}
         <ThemedView type="backgroundElement" style={styles.section}>
@@ -210,11 +209,33 @@ export default function SleepDetailScreen() {
           <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
             Récupération
           </ThemedText>
-          <StatRow
-            label="Body Battery"
-            value={sleep.bodyBatteryChange !== 0 ? `+${sleep.bodyBatteryChange}` : '--'}
-            accent
-          />
+          {(sleep.bodyBatteryAtSleep > 0 || sleep.bodyBatteryAtWake > 0) ? (
+            <View style={styles.bodyBatteryRow}>
+              <View style={styles.bodyBatteryItem}>
+                <ThemedText type="small" themeColor="textSecondary">Coucher</ThemedText>
+                <ThemedText style={styles.bodyBatteryValue}>{sleep.bodyBatteryAtSleep}</ThemedText>
+              </View>
+              <ThemedText style={[styles.bodyBatteryArrow, { color: colors.textSecondary }]}>→</ThemedText>
+              <View style={styles.bodyBatteryItem}>
+                <ThemedText type="small" themeColor="textSecondary">Réveil</ThemedText>
+                <ThemedText style={[styles.bodyBatteryValue, { color: sleep.bodyBatteryAtWake >= 70 ? '#10B981' : sleep.bodyBatteryAtWake >= 40 ? '#F59E0B' : '#F87171' }]}>
+                  {sleep.bodyBatteryAtWake}
+                </ThemedText>
+              </View>
+              <View style={styles.bodyBatteryItem}>
+                <ThemedText type="small" themeColor="textSecondary">Delta</ThemedText>
+                <ThemedText style={[styles.bodyBatteryValue, { color: sleep.bodyBatteryChange > 0 ? '#10B981' : sleep.bodyBatteryChange < 0 ? '#F87171' : colors.textSecondary }]}>
+                  {sleep.bodyBatteryChange > 0 ? '+' : ''}{sleep.bodyBatteryChange}
+                </ThemedText>
+              </View>
+            </View>
+          ) : (
+            <StatRow
+              label="Body Battery"
+              value={sleep.bodyBatteryChange !== 0 ? `${sleep.bodyBatteryChange > 0 ? '+' : ''}${sleep.bodyBatteryChange}` : '--'}
+              accent
+            />
+          )}
           <StatRow
             label="Stress moyen"
             value={sleep.avgSleepStress > 0 ? `${sleep.avgSleepStress}` : '--'}
@@ -228,6 +249,10 @@ export default function SleepDetailScreen() {
             value={sleep.awakeCount > 0 ? `${sleep.awakeCount}` : '--'}
           />
         </ThemedView>
+        {/* Daily Stress */}
+        {stressData && stressData.overallLevel > 0 && (
+          <StressCard stress={stressData} />
+        )}
       </ScrollView>
     </ThemedView>
   );
@@ -247,20 +272,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingBottom: Spacing.six,
   },
-  heroSection: {
-    alignItems: 'center',
-    paddingVertical: Spacing.four,
-    gap: Spacing.one,
-  },
-  heroScore: {
-    fontSize: 48,
-    fontWeight: '700',
-    fontFamily: Fonts.mono,
-  },
-  heroLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
   section: {
     padding: Spacing.three,
     borderRadius: 14,
@@ -268,31 +279,73 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: Spacing.two,
   },
-  durationRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  durationHero: {
     alignItems: 'center',
-  },
-  durationMain: {
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.one,
     gap: Spacing.half,
+    overflow: 'visible',
   },
   durationValue: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 36,
+    fontFamily: Fonts.mono,
+    lineHeight: 44,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    gap: Spacing.one,
+    paddingBottom: Spacing.two,
+  },
+  scoreBadge: {
+    fontSize: 20,
     fontFamily: Fonts.mono,
   },
-  times: {
-    gap: Spacing.two,
-    alignItems: 'flex-end',
+  scoreLabel: {
+    fontSize: 14,
+    fontFamily: Fonts.semiBold,
+  },
+  timesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   timeItem: {
-    alignItems: 'flex-end',
-    gap: 1,
+    alignItems: 'center',
+    gap: 2,
   },
   timeValue: {
     fontSize: 16,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
+  },
+  overallScoreHero: {
+    marginBottom: Spacing.two,
+  },
+  scoreGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  bodyBatteryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: Spacing.two,
+  },
+  bodyBatteryItem: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  bodyBatteryValue: {
+    fontSize: 20,
+    fontFamily: Fonts.mono,
+  },
+  bodyBatteryArrow: {
+    fontSize: 18,
+    marginTop: Spacing.three,
   },
   error: {
     color: '#e74c3c',

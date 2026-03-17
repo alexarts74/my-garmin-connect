@@ -74,7 +74,6 @@ const styles = StyleSheet.create({
   },
   zoneLabel: {
     fontSize: 13,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   bpmRange: {
@@ -99,7 +98,6 @@ const styles = StyleSheet.create({
   },
   percentage: {
     fontSize: 13,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
   },
   duration: {

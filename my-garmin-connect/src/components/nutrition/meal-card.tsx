@@ -119,11 +119,10 @@ const styles = StyleSheet.create({
   },
   mealType: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   calories: {
     fontSize: 16,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   itemRow: {
@@ -138,7 +137,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   itemCal: {
     fontSize: 13,
@@ -156,7 +155,6 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 12,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
   },
   deleteButton: {

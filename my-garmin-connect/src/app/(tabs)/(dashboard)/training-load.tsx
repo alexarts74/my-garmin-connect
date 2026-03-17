@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
   },
   heroScore: {
     fontSize: 36,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     letterSpacing: -1,
   },
   heroLabel: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   metricsRow: {
     flexDirection: 'row',
@@ -250,13 +250,13 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   metricValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   metricSublabel: {
     fontSize: 10,

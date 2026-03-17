@@ -132,6 +132,5 @@ const styles = StyleSheet.create({
   mono: {
     fontFamily: Fonts.mono,
     fontSize: 14,
-    fontWeight: '600',
   },
 });

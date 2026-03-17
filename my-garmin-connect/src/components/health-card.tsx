@@ -80,12 +80,11 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 18,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   unit: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   pressable: {
     flex: 1,

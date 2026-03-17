@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   statsRow: {
     flexDirection: 'row',
@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 14,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
   },
 });

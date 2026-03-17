@@ -78,18 +78,18 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   labelSection: {
     gap: 2,
   },
   readinessLabel: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   arrow: {
     fontSize: 24,
-    fontWeight: '300',
+    fontFamily: Fonts.regular,
   },
   pressed: {
     opacity: 0.8,

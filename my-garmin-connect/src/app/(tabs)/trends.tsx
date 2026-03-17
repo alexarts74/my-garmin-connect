@@ -8,9 +8,10 @@ import { PaceChart } from '@/components/charts/pace-chart';
 import { CalendarHeatmap } from '@/components/charts/calendar-heatmap';
 import { WeekComparison } from '@/components/charts/week-comparison';
 import { RacePredictions } from '@/components/race-predictions';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useTrends } from '@/hooks/use-trends';
 import { useTheme } from '@/hooks/use-theme';
@@ -53,9 +54,7 @@ export default function TrendsScreen() {
           }
         >
           <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
-            <ThemedText type="subtitle" style={styles.title}>
-              Tendances
-            </ThemedText>
+            <ScreenHeader title="Tendances" titleStyle={styles.title} />
 
             {/* Period selector */}
             <View style={styles.periodRow}>
@@ -74,7 +73,7 @@ export default function TrendsScreen() {
                   >
                     <ThemedText
                       type="small"
-                      style={weeks === w ? { color: colors.accent, fontWeight: '700' } : undefined}
+                      style={weeks === w ? { color: colors.accent, fontFamily: Fonts.bold } : undefined}
                       themeColor={weeks === w ? undefined : 'textSecondary'}
                     >
                       {w} sem.
@@ -132,7 +131,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   periodRow: {
     flexDirection: 'row',

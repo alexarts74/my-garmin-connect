@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   statsRow: {
     flexDirection: 'row',
@@ -106,7 +106,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 18,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   pressed: {

@@ -9,8 +9,9 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 import Constants from 'expo-constants';
 
 import { ThemedText } from '@/components/themed-text';
@@ -18,13 +19,16 @@ import { ThemedView } from '@/components/themed-view';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme, useThemeMode } from '@/hooks/use-theme';
+import type { ThemeMode } from '@/hooks/use-theme';
 import { formatPace } from '@/lib/format';
 
 export default function ProfileScreen() {
   const { isAuthenticated, isLoading: authLoading, email, logout } = useAuth();
   const { data: profile, isLoading: profileLoading, refetch } = useProfile();
   const colors = useTheme();
+  const { mode, setMode } = useThemeMode();
+  const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
@@ -64,6 +68,20 @@ export default function ProfileScreen() {
   return (
     <ThemedView type="background" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/* Close button */}
+        <View style={styles.closeRow}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { backgroundColor: colors.backgroundElement },
+              pressed && { opacity: 0.6 },
+            ]}
+            hitSlop={8}>
+            <SymbolView name="xmark" size={16} tintColor={colors.textSecondary} />
+          </Pressable>
+        </View>
+
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -149,6 +167,44 @@ export default function ProfileScreen() {
               </View>
             )}
 
+            {/* Appearance */}
+            <View style={styles.section}>
+              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+                APPARENCE
+              </ThemedText>
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <View style={styles.themeRow}>
+                  {([
+                    { key: 'system' as ThemeMode, label: 'Système' },
+                    { key: 'light' as ThemeMode, label: 'Clair' },
+                    { key: 'dark' as ThemeMode, label: 'Sombre' },
+                  ]).map((option) => {
+                    const isActive = mode === option.key;
+                    return (
+                      <Pressable
+                        key={option.key}
+                        onPress={() => setMode(option.key)}
+                        style={({ pressed }) => [
+                          styles.themeButton,
+                          {
+                            backgroundColor: isActive ? colors.accent : colors.backgroundSelected,
+                          },
+                          pressed && { opacity: 0.7 },
+                        ]}>
+                        <ThemedText
+                          style={[
+                            styles.themeButtonText,
+                            { color: isActive ? '#fff' : colors.text },
+                          ]}>
+                          {option.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ThemedView>
+            </View>
+
             {/* Account */}
             <View style={styles.section}>
               <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
@@ -210,6 +266,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  closeRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: {
     flexGrow: 1,
   },
@@ -221,7 +290,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: Spacing.two,
-    marginTop: Spacing.three,
   },
   avatar: {
     width: 88,
@@ -233,7 +301,7 @@ const styles = StyleSheet.create({
   },
   initials: {
     fontSize: 32,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -247,7 +315,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   section: {
     gap: Spacing.two,
@@ -274,12 +342,25 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontWeight: '600',
     fontFamily: Fonts.mono,
   },
   statUnit: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  themeButton: {
+    flex: 1,
+    paddingVertical: Spacing.two + 2,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  themeButtonText: {
+    fontSize: 14,
+    fontFamily: Fonts.semiBold,
   },
   infoRow: {
     gap: Spacing.one,
@@ -298,7 +379,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#E74C3C',
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     fontSize: 16,
   },
 });

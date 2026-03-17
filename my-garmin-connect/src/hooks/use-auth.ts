@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { get, post, setOnUnauthorized } from '@/lib/api-client';
+import { get, post, setOnUnauthorized, ApiError } from '@/lib/api-client';
 import { saveTokens, loadTokens, clearTokens } from '@/lib/token-storage';
-import type { AuthStatus, LoginRequest, LoginResponse, RestoreRequest } from '@/types/garmin';
+import type { AuthStatus, GarminTokens, LoginRequest, LoginResponse, RestoreRequest } from '@/types/garmin';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
@@ -40,13 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const tokens = await loadTokens();
         if (!tokens) return;
 
-        await post<{ success: boolean }>('/auth/restore', {
+        const result = await post<{ success: boolean; tokens?: GarminTokens }>('/auth/restore', {
           oauth1: tokens.oauth1,
           oauth2: tokens.oauth2,
         } satisfies RestoreRequest);
+        if (result.tokens) {
+          await saveTokens(result.tokens);
+        }
         setIsAuthenticated(true);
-      } catch {
-        await clearTokens();
+      } catch (err) {
+        // Only clear tokens on 401 (invalid tokens). Keep them for network/server errors.
+        const isAuthError = err instanceof ApiError && err.status === 401;
+        if (isAuthError) {
+          await clearTokens();
+        }
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);

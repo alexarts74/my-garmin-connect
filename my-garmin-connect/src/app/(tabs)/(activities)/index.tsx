@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'r
 import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityCard } from '@/components/activity-card';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Fonts, Spacing } from '@/constants/theme';
@@ -23,7 +24,7 @@ function MonthlyHeader({ activities }: { activities: GarminActivity[] }) {
 
   return (
     <View style={styles.monthHeader}>
-      <ThemedText type="subtitle">Activites</ThemedText>
+      <ScreenHeader title="Activités" titleStyle={styles.title} />
       <View style={styles.monthStats}>
         <ThemedText style={[styles.monthStat, { color: colors.accent }]}>
           {formatDistance(totalDistance)}
@@ -114,6 +115,10 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingBottom: Spacing.six,
   },
+  title: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
+  },
   monthHeader: {
     gap: Spacing.one,
     marginBottom: Spacing.two,
@@ -125,7 +130,6 @@ const styles = StyleSheet.create({
   },
   monthStat: {
     fontSize: 16,
-    fontWeight: '700',
     fontFamily: Fonts.mono,
   },
   empty: {

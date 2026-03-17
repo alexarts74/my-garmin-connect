@@ -147,7 +147,7 @@ export default function AddMealScreen() {
                   >
                     <ThemedText
                       type="small"
-                      style={mealType === t.key ? { color: colors.accent, fontWeight: '700' } : undefined}
+                      style={mealType === t.key ? { color: colors.accent, fontFamily: Fonts.bold } : undefined}
                       themeColor={mealType === t.key ? undefined : 'textSecondary'}
                     >
                       {t.label}
@@ -288,7 +288,7 @@ export default function AddMealScreen() {
                             >
                               <ThemedText
                                 type="small"
-                                style={item.quantity === preset ? { color: colors.accent, fontWeight: '700' } : undefined}
+                                style={item.quantity === preset ? { color: colors.accent, fontFamily: Fonts.bold } : undefined}
                                 themeColor={item.quantity === preset ? undefined : 'textSecondary'}
                               >
                                 {preset}g
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   typeRow: {
     flexDirection: 'row',
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   },
   searchButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
   },
   scanButton: {
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   resultName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   selectedSection: {
     gap: Spacing.two,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     textAlign: 'center',
   },
   presetRow: {
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     fontSize: 15,
   },
   pressed: {
