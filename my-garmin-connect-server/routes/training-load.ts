@@ -3,6 +3,13 @@ import { getClient } from './auth';
 
 const router = Router();
 
+function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // ── Training Load & Recovery ─────────────────────────────────────────────────
 
 router.get('/', async (_req, res) => {
@@ -14,21 +21,26 @@ router.get('/', async (_req, res) => {
 
   try {
     const now = new Date();
-    const sixWeeksAgo = new Date(now.getTime() - 42 * 24 * 60 * 60 * 1000);
+    // Fetch 90 days of data: 42 days of warm-up + 42 days displayed
+    // This lets the EWA (exponentially weighted average) converge before the display window
+    const warmupDays = 42;
+    const displayDays = 42;
+    const totalDays = warmupDays + displayDays;
+    const fetchStart = new Date(now.getTime() - totalDays * 24 * 60 * 60 * 1000);
 
     // Fetch activities and health data in parallel
     const [activities, heartRate, sleep, userSettings] = await Promise.all([
-      client.getActivities(0, 200),
+      client.getActivities(0, 400),
       client.getHeartRate(now).catch(() => null),
       client.getSleepData(now).catch(() => null),
       client.getUserSettings().catch(() => null),
     ]);
 
-    // Filter running activities in the last 42 days
+    // Filter running activities in the fetch window
     const runs = activities.filter((a: any) => {
       if (a.activityType?.typeKey !== 'running') return false;
       const d = new Date(a.startTimeLocal);
-      return d >= sixWeeksAgo;
+      return d >= fetchStart;
     });
 
     // Get max HR for TRIMP calculation (use 220-age estimate or Garmin data)
@@ -51,7 +63,7 @@ router.get('/', async (_req, res) => {
       const trimp = durationMin * clampedHRR * 0.64 * Math.exp(1.92 * clampedHRR);
 
       trimpData.push({
-        date: new Date(run.startTimeLocal).toISOString().slice(0, 10),
+        date: run.startTimeLocal.slice(0, 10),
         trimp: Math.round(trimp * 10) / 10,
       });
     }
@@ -63,7 +75,6 @@ router.get('/', async (_req, res) => {
     }
 
     // Calculate ATL (7-day exponentially weighted) and CTL (42-day exponentially weighted)
-    const days = 42;
     const today = new Date();
     const atlDecay = 2 / (7 + 1);
     const ctlDecay = 2 / (42 + 1);
@@ -71,11 +82,22 @@ router.get('/', async (_req, res) => {
     let atl = 0;
     let ctl = 0;
 
+    // Warm-up phase: run EWA on the first 42 days so it converges before display
+    for (let i = totalDays - 1; i >= displayDays; i--) {
+      const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const key = localDateKey(d);
+      const dayTrimp = dailyTrimp.get(key) || 0;
+
+      atl = atl * (1 - atlDecay) + dayTrimp * atlDecay;
+      ctl = ctl * (1 - ctlDecay) + dayTrimp * ctlDecay;
+    }
+
+    // Display phase: last 42 days with warmed-up EWA
     const history: { date: string; atl: number; ctl: number; tsb: number }[] = [];
 
-    for (let i = days - 1; i >= 0; i--) {
+    for (let i = displayDays - 1; i >= 0; i--) {
       const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-      const key = d.toISOString().slice(0, 10);
+      const key = localDateKey(d);
       const dayTrimp = dailyTrimp.get(key) || 0;
 
       atl = atl * (1 - atlDecay) + dayTrimp * atlDecay;
@@ -211,8 +233,9 @@ function generateInsights(
 
   // Days since last run
   if (runs.length > 0) {
-    const lastRun = new Date(runs[0].startTimeLocal);
-    const daysSince = Math.floor((Date.now() - lastRun.getTime()) / (1000 * 60 * 60 * 24));
+    const todayStr = localDateKey(new Date());
+    const lastRunStr = runs[0].startTimeLocal.slice(0, 10);
+    const daysSince = Math.round((new Date(todayStr).getTime() - new Date(lastRunStr).getTime()) / (1000 * 60 * 60 * 24));
     if (daysSince >= 3 && sleepScore != null && sleepScore >= 70) {
       insights.push(`${daysSince} jours sans courir + bon sommeil → tu es frais pour une sortie intense`);
     } else if (daysSince === 0 && tsb < -10) {

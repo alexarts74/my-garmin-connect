@@ -88,7 +88,7 @@ router.get('/trends', async (req, res) => {
     for (const run of runs as any[]) {
       const date = new Date(run.startTimeLocal);
       const weekStart = getWeekStart(date);
-      const key = weekStart.toISOString().slice(0, 10);
+      const key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
 
       if (!weeklyMap.has(key)) {
         weeklyMap.set(key, {
@@ -125,7 +125,7 @@ router.get('/trends', async (req, res) => {
     // Build daily activity map for heatmap (last N weeks)
     const dailyMap = new Map<string, { distance: number; count: number }>();
     for (const run of runs as any[]) {
-      const key = new Date(run.startTimeLocal).toISOString().slice(0, 10);
+      const key = run.startTimeLocal.slice(0, 10);
       if (!dailyMap.has(key)) {
         dailyMap.set(key, { distance: 0, count: 0 });
       }

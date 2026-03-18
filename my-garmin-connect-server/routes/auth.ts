@@ -72,7 +72,6 @@ router.post('/restore', async (req, res) => {
   try {
     const restored = new GarminConnect();
     restored.loadToken(oauth1, oauth2);
-    await restored.getUserSettings();
     client = restored;
     const freshTokens = restored.exportToken();
     lastAccessToken = freshTokens.oauth2?.access_token ?? null;

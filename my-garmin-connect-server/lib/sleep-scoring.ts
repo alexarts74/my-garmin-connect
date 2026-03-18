@@ -61,7 +61,7 @@ function scoreDuration(sleepTimeSeconds: number): ScoreDetail {
   return {
     score,
     label: scoreLabel(score),
-    detail: `${h}h${m.toString().padStart(2, '0')} — ${hours >= 7 && hours <= 9 ? 'optimal (7-9h)' : hours < 7 ? 'insuffisant' : 'excessif'}`,
+    detail: `${h}h${m.toString().padStart(2, '0')} — ${hours >= 7 && hours <= 9 ? 'optimal (7-9h)' : hours < 7 ? 'en dessous de l\'optimal (7-9h)' : 'au-dessus de l\'optimal (7-9h)'}`,
   };
 }
 
@@ -85,12 +85,12 @@ function scorePercentage(
   if (pct >= optimalMin && pct <= optimalMax) {
     score = 100;
   } else if (pct < optimalMin) {
-    // Linear decay: 0 when pct is 0
-    score = clamp((pct / optimalMin) * 100, 0, 100);
+    // Linear decay: 0 when pct is 0, capped at 70 so out-of-range never scores above "Bon"
+    score = clamp((pct / optimalMin) * 70, 0, 70);
   } else {
-    // Linear decay above optimal
+    // Linear decay above optimal, capped at 70 so out-of-range never scores above "Bon"
     const overRange = 100 - optimalMax;
-    score = clamp(((100 - pct) / overRange) * 100, 0, 100);
+    score = clamp(((100 - pct) / overRange) * 70, 0, 70);
   }
 
   score = Math.round(score);
@@ -99,7 +99,7 @@ function scorePercentage(
   return {
     score,
     label: scoreLabel(score),
-    detail: `${pct.toFixed(0)}% — ${inRange ? `dans la norme (${optimalMin}-${optimalMax}%)` : pct < optimalMin ? 'insuffisant' : 'élevé'}`,
+    detail: `${pct.toFixed(0)}% — ${inRange ? `dans la norme (${optimalMin}-${optimalMax}%)` : pct < optimalMin ? `en dessous de la norme (${optimalMin}-${optimalMax}%)` : `au-dessus de la norme (${optimalMin}-${optimalMax}%)`}`,
   };
 }
 
@@ -124,7 +124,7 @@ function scoreAwake(awakeSleepSeconds: number, totalSeconds: number): ScoreDetai
   return {
     score,
     label: scoreLabel(score),
-    detail: `${pct.toFixed(0)}% — ${pct <= 5 ? 'optimal (< 5%)' : 'trop élevé'}`,
+    detail: `${pct.toFixed(0)}% — ${pct <= 5 ? 'optimal (< 5%)' : 'au-dessus de l\'optimal (< 5%)'}`,
   };
 }
 

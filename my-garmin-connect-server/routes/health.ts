@@ -15,13 +15,20 @@ router.get('/today', async (_req, res) => {
   try {
     const today = new Date();
 
-    const [steps, heartRate, sleep] = await Promise.all([
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    const [steps, heartRate, sleep, dailySummary] = await Promise.all([
       client.getSteps(today).catch((e: any) => { console.error('[health] getSteps error:', e.message); return null; }),
       client.getHeartRate(today).catch(() => null),
       client.getSleepData(today).catch(() => null),
+      client.get<any>(`https://connectapi.garmin.com/usersummary-service/stats/calories/daily/${dateStr}/${dateStr}`).catch((e: any) => { console.error('[health] calories error:', e.message); return null; }),
     ]);
 
     console.log('[health] steps raw:', JSON.stringify(steps).slice(0, 500));
+    console.log('[health] calories raw:', JSON.stringify(dailySummary).slice(0, 300));
 
     const totalSteps =
       Array.isArray(steps) && steps.length > 0
@@ -76,6 +83,12 @@ router.get('/today', async (_req, res) => {
       }
     }
 
+    const caloriesValues = Array.isArray(dailySummary) && dailySummary.length > 0
+      ? dailySummary[0]?.values
+      : null;
+    const totalCalories = caloriesValues?.totalCalories ?? 0;
+    const activeCalories = caloriesValues?.activeCalories ?? 0;
+
     res.json({
       steps: totalSteps,
       restingHeartRate,
@@ -84,6 +97,8 @@ router.get('/today', async (_req, res) => {
       bodyBatteryChange,
       bodyBatteryAtSleep,
       bodyBatteryAtWake,
+      totalCalories,
+      activeCalories,
     });
   } catch (error) {
     const message =
@@ -195,7 +210,7 @@ router.get('/sleep', async (_req, res) => {
     const dd = String(today.getDate()).padStart(2, '0');
     const dateStr = `${yyyy}-${mm}-${dd}`;
 
-    const [sleep, stressData] = await Promise.all([
+    const [sleep, stressData, heartRateData] = await Promise.all([
       client.getSleepData(today).catch((e: any) => {
         console.error('[sleep] getSleepData error:', e.message);
         return null;
@@ -204,6 +219,10 @@ router.get('/sleep', async (_req, res) => {
         `https://connectapi.garmin.com/wellness-service/wellness/dailyStress/${dateStr}`
       ).catch((e: any) => {
         console.error('[sleep] stress endpoint error:', e.message);
+        return null;
+      }),
+      client.getHeartRate().catch((e: any) => {
+        console.error('[sleep] getHeartRate error:', e.message);
         return null;
       }),
     ]);
@@ -303,7 +322,7 @@ router.get('/sleep', async (_req, res) => {
       averageRespirationValue: dto?.averageRespirationValue ?? 0,
       lowestRespirationValue: dto?.lowestRespirationValue ?? 0,
       highestRespirationValue: dto?.highestRespirationValue ?? 0,
-      restingHeartRate: dto?.restingHeartRate ?? 0,
+      restingHeartRate: dto?.restingHeartRate || (heartRateData as any)?.restingHeartRate || 0,
       minSleepHR,
       avgSleepHR,
       avgOvernightHrv: avgOvernightHrv,
@@ -459,6 +478,131 @@ router.get('/stress', async (_req, res) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to fetch stress data';
+    res.status(500).json({ error: message });
+  }
+});
+
+router.get('/history', async (req, res) => {
+  const client = getClient();
+  if (!client) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  try {
+    const days = Math.min(Math.max(parseInt(req.query.days as string) || 30, 1), 90);
+
+    // Generate date strings for the requested range
+    const dates: string[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      dates.push(`${yyyy}-${mm}-${dd}`);
+    }
+
+    // VO2 Max: extract from recent activities (no extra API calls per day)
+    const vo2Max: Array<{ date: string; value: number }> = [];
+    try {
+      const activities = await client.getActivities(0, 200);
+      for (const a of activities as any[]) {
+        const v = a.vO2MaxValue;
+        if (typeof v === 'number' && v > 0 && a.startTimeLocal) {
+          const date = a.startTimeLocal.slice(0, 10);
+          vo2Max.push({ date, value: v });
+        }
+      }
+      // Sort chronologically and deduplicate (keep last per day)
+      const vo2Map = new Map<string, number>();
+      for (const entry of vo2Max) {
+        vo2Map.set(entry.date, entry.value);
+      }
+      vo2Max.length = 0;
+      for (const [date, value] of vo2Map) {
+        vo2Max.push({ date, value });
+      }
+      vo2Max.sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e: any) {
+      console.error('[health/history] getActivities error:', e.message);
+    }
+
+    // Fetch HR, steps, sleep in batches of 5 to avoid rate limiting
+    const restingHR: Array<{ date: string; value: number }> = [];
+    const steps: Array<{ date: string; value: number }> = [];
+    const sleepScore: Array<{ date: string; value: number }> = [];
+    const calories: Array<{ date: string; value: number }> = [];
+
+    // Fetch total daily calories (BMR + active) from Garmin stats endpoint
+    // API limits to 28 days per request, so split into chunks
+    try {
+      const CHUNK_SIZE = 28;
+      for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+        const chunk = dates.slice(i, i + CHUNK_SIZE);
+        const url = `https://connectapi.garmin.com/usersummary-service/stats/calories/daily/${chunk[0]}/${chunk[chunk.length - 1]}`;
+        console.log('[health/history] calories fetch:', url);
+        const caloriesData = await client.get<any>(url);
+        console.log('[health/history] calories chunk response:', JSON.stringify(caloriesData).slice(0, 500));
+        if (Array.isArray(caloriesData)) {
+          for (const entry of caloriesData) {
+            if (entry.calendarDate && entry.values?.totalCalories > 0) {
+              calories.push({ date: entry.calendarDate, value: entry.values.totalCalories });
+            }
+          }
+        }
+      }
+      console.log('[health/history] total calories entries:', calories.length);
+    } catch (e: any) {
+      console.error('[health/history] calories error:', e.message);
+    }
+
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < dates.length; i += BATCH_SIZE) {
+      const batch = dates.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(
+        batch.map(async (dateStr) => {
+          const d = new Date(dateStr);
+          const [hr, st, sl] = await Promise.all([
+            client.getHeartRate(d).catch(() => null),
+            client.getSteps(d).catch(() => null),
+            client.getSleepData(d).catch(() => null),
+          ]);
+          return { dateStr, hr, st, sl };
+        })
+      );
+
+      for (const { dateStr, hr, st, sl } of results) {
+        // Resting HR
+        if (hr && typeof hr === 'object') {
+          const rhr = (hr as any).restingHeartRate;
+          if (typeof rhr === 'number' && rhr > 0) {
+            restingHR.push({ date: dateStr, value: rhr });
+          }
+        }
+
+        // Steps
+        if (Array.isArray(st) && st.length > 0) {
+          const total = st[0]?.totalSteps;
+          if (typeof total === 'number' && total > 0) {
+            steps.push({ date: dateStr, value: total });
+          }
+        }
+
+        // Sleep score
+        if (sl && typeof sl === 'object') {
+          const score = (sl as any).dailySleepDTO?.sleepScores?.overall?.value;
+          if (typeof score === 'number' && score > 0) {
+            sleepScore.push({ date: dateStr, value: score });
+          }
+        }
+      }
+    }
+
+    res.json({ restingHR, vo2Max, steps, sleepScore, calories });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to fetch health history';
     res.status(500).json({ error: message });
   }
 });

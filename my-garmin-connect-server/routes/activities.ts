@@ -15,10 +15,29 @@ router.get('/', async (req, res) => {
 
   try {
     const activities = await client.getActivities(start, limit);
+    if (activities.length > 0) {
+      const sample = activities[0] as any;
+      console.log('[activities] sample keys:', Object.keys(sample).join(', '));
+      console.log('[activities] sample calories:', sample.calories, 'summaryDTO.calories:', sample.summaryDTO?.calories);
+    }
     // Filter running activities (typeKey === 'running')
-    const runs = activities.filter(
-      (a: any) => a.activityType?.typeKey === 'running'
-    );
+    const runs = activities
+      .filter((a: any) => a.activityType?.typeKey === 'running')
+      .map((a: any) => ({
+        activityId: a.activityId,
+        activityName: a.activityName ?? '',
+        startTimeLocal: a.startTimeLocal ?? '',
+        distance: a.distance ?? 0,
+        duration: a.duration ?? 0,
+        averageSpeed: a.averageSpeed ?? 0,
+        maxSpeed: a.maxSpeed ?? 0,
+        averageHR: a.averageHR ?? 0,
+        maxHR: a.maxHR ?? 0,
+        calories: a.calories ?? 0,
+        elevationGain: a.elevationGain ?? 0,
+        elevationLoss: a.elevationLoss ?? 0,
+        activityType: a.activityType ?? { typeKey: 'running', typeId: 1 },
+      }));
     res.json(runs);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch activities';

@@ -7,7 +7,7 @@ import healthRouter from './routes/health';
 import profileRouter from './routes/profile';
 import statsRouter from './routes/stats';
 import trainingLoadRouter from './routes/training-load';
-import { loadPersistedTokens, clearPersistedTokens } from './token-persistence';
+import { loadPersistedTokens } from './token-persistence';
 
 const app = express();
 const PORT = 3001;
@@ -34,12 +34,11 @@ async function restoreSession() {
   try {
     const client = new GarminConnect();
     client.loadToken(tokens.oauth1, tokens.oauth2);
-    await client.getUserSettings();
     setClient(client);
-    console.log('Session restored from file');
+    console.log('Session restored from persisted tokens');
   } catch (error) {
-    console.log('Failed to restore session from file, clearing tokens:', error instanceof Error ? error.message : error);
-    clearPersistedTokens();
+    console.log('Failed to load persisted tokens:', error instanceof Error ? error.message : error);
+    // Don't clear tokens - they may still be valid for an OAuth refresh
   }
 }
 
