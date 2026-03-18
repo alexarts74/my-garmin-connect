@@ -37,9 +37,14 @@ export function VolumeChart({ data, mode }: VolumeChartProps) {
 
   return (
     <ThemedView type="backgroundElement" style={styles.container}>
-      <ThemedText type="smallBold" style={styles.title}>
-        {mode === 'distance' ? 'Volume (km)' : 'Durée (heures)'}
-      </ThemedText>
+      <View>
+        <ThemedText type="smallBold" style={styles.title}>
+          {mode === 'distance' ? 'Volume (km)' : 'Durée (heures)'}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {mode === 'distance' ? 'Distance par semaine' : 'Temps par semaine'}
+        </ThemedText>
+      </View>
       <BarChart
         data={barData}
         barWidth={28}
@@ -53,6 +58,7 @@ export function VolumeChart({ data, mode }: VolumeChartProps) {
         hideRules
         xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
         yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+        yAxisLabelSuffix={mode === 'distance' ? ' km' : ' h'}
         isAnimated
         animationDuration={300}
       />

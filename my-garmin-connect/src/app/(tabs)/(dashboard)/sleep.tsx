@@ -9,7 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { TrainingPredictionCard } from '@/components/training-prediction-card';
 import { StressCard } from '@/components/stress-card';
 import { Fonts, Spacing } from '@/constants/theme';
-import { useSleepDetail, useStress } from '@/hooks/use-health';
+import { useHealthHistory, useSleepDetail, useStress } from '@/hooks/use-health';
+import { MetricEvolutionChart } from '@/components/charts/metric-evolution-chart';
 import { useTheme } from '@/hooks/use-theme';
 import { formatSleepDuration, formatTime } from '@/lib/format';
 
@@ -38,6 +39,7 @@ function qualifierColor(key: string | undefined, accent: string): string {
 export default function SleepDetailScreen() {
   const { data: sleep, isLoading, error } = useSleepDetail();
   const { data: stressData } = useStress();
+  const { data: healthHistory } = useHealthHistory(30);
   const colors = useTheme();
 
   if (isLoading) {
@@ -194,11 +196,9 @@ export default function SleepDetailScreen() {
             label="FC moy. (nuit)"
             value={sleep.avgSleepHR > 0 ? `${sleep.avgSleepHR} bpm` : '--'}
           />
-          <StatRow
-            label="HRV"
-            value={sleep.avgOvernightHrv > 0 ? `${sleep.avgOvernightHrv} ms` : '--'}
-            accent
-          />
+          {sleep.avgOvernightHrv > 0 && (
+            <StatRow label="HRV" value={`${sleep.avgOvernightHrv} ms`} accent />
+          )}
           {sleep.hrvStatus ? (
             <StatRow label="Statut HRV" value={sleep.hrvStatus} />
           ) : null}
@@ -249,6 +249,15 @@ export default function SleepDetailScreen() {
             value={sleep.awakeCount > 0 ? `${sleep.awakeCount}` : '--'}
           />
         </ThemedView>
+        {/* Sleep Score Evolution */}
+        {healthHistory && healthHistory.sleepScore.length >= 2 && (
+          <MetricEvolutionChart
+            data={healthHistory.sleepScore}
+            title="Score de sommeil (30j)"
+            color={colors.accent}
+          />
+        )}
+
         {/* Daily Stress */}
         {stressData && stressData.overallLevel > 0 && (
           <StressCard stress={stressData} />

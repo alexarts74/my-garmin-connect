@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { get } from '@/lib/api-client';
 import { useAuth } from '@/hooks/use-auth';
-import type { HealthToday, SleepDetail, StressData, Vitals, WeeklyStats } from '@/types/health';
+import type { HealthHistory, HealthToday, SleepDetail, StressData, Vitals, WeeklyStats } from '@/types/health';
 
 export function useHealthToday() {
   const { isAuthenticated } = useAuth();
@@ -36,6 +36,16 @@ export function useStress() {
     queryKey: ['health', 'stress'],
     queryFn: () => get<StressData | null>('/health/stress'),
     enabled: isAuthenticated,
+  });
+}
+
+export function useHealthHistory(days = 30) {
+  const { isAuthenticated } = useAuth();
+  return useQuery<HealthHistory>({
+    queryKey: ['health', 'history', days],
+    queryFn: () => get<HealthHistory>(`/health/history?days=${days}`),
+    enabled: isAuthenticated,
+    staleTime: 10 * 60 * 1000,
   });
 }
 

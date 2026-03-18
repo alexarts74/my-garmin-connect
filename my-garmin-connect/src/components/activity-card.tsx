@@ -70,6 +70,14 @@ export function ActivityCard({ activity }: ActivityCardProps) {
               Allure
             </ThemedText>
           </View>
+          <View style={styles.stat}>
+            <ThemedText style={styles.statValue}>
+              {activity.calories > 0 ? `${activity.calories}` : '--'}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              kcal
+            </ThemedText>
+          </View>
         </View>
       </ThemedView>
     </AnimatedPressable>

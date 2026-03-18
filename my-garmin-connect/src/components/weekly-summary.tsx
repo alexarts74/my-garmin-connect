@@ -52,7 +52,7 @@ export function WeeklySummary({ stats }: WeeklySummaryProps) {
         />
         <StatBlock
           value={formatDuration(stats.totalDuration)}
-          label="Duree"
+          label="Durée"
         />
         <StatBlock
           value={`${formatWeeklyPace(stats.averagePace)} /km`}

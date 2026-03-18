@@ -35,7 +35,7 @@ export function CalendarHeatmap({ data, weeks }: CalendarHeatmapProps) {
     for (let d = 0; d < 7; d++) {
       const dayOffset = w * 7 + (6 - d);
       const date = new Date(today.getTime() - dayOffset * 24 * 60 * 60 * 1000);
-      const key = date.toISOString().slice(0, 10);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const distance = distanceMap.get(key) || 0;
       const level = maxDistance > 0
         ? Math.min(4, Math.ceil((distance / maxDistance) * 4))
@@ -55,9 +55,14 @@ export function CalendarHeatmap({ data, weeks }: CalendarHeatmapProps) {
 
   return (
     <ThemedView type="backgroundElement" style={styles.container}>
-      <ThemedText type="smallBold" style={styles.title}>
-        Calendrier
-      </ThemedText>
+      <View>
+        <ThemedText type="smallBold" style={styles.title}>
+          Calendrier
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Distance quotidienne
+        </ThemedText>
+      </View>
       <View style={styles.grid}>
         {/* Day labels */}
         <View style={styles.dayLabels}>
@@ -83,6 +88,16 @@ export function CalendarHeatmap({ data, weeks }: CalendarHeatmapProps) {
             </View>
           ))}
         </View>
+      </View>
+      {/* Legend */}
+      <View style={styles.legend}>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.legendLabel}>0 km</ThemedText>
+        {levelColors.map((color, i) => (
+          <View key={i} style={[styles.legendCell, { backgroundColor: color }]} />
+        ))}
+        <ThemedText type="small" themeColor="textSecondary" style={styles.legendLabel}>
+          {maxDistance > 0 ? `${(maxDistance / 1000).toFixed(0)} km` : 'max'}
+        </ThemedText>
       </View>
     </ThemedView>
   );
@@ -124,5 +139,20 @@ const styles = StyleSheet.create({
     width: DAY_SIZE,
     height: DAY_SIZE,
     borderRadius: 3,
+  },
+  legend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: Spacing.two,
+  },
+  legendCell: {
+    width: DAY_SIZE,
+    height: DAY_SIZE,
+    borderRadius: 3,
+  },
+  legendLabel: {
+    fontSize: 10,
   },
 });

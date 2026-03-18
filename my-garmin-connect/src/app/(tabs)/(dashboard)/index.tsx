@@ -1,7 +1,7 @@
 import React from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BodyBatteryCard } from '@/components/body-battery-card';
 import { HealthCard } from '@/components/health-card';
@@ -34,6 +34,7 @@ export default function DashboardScreen() {
   const { recovery: hrRecovery } = useHRRecovery();
 
   const colors = useTheme();
+  const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
@@ -55,6 +56,13 @@ export default function DashboardScreen() {
   }
 
   const isLoading = activitiesLoading && healthLoading && vitalsLoading && weeklyLoading;
+
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayActivities = React.useMemo(
+    () => activities?.filter(a => a.startTimeLocal?.slice(0, 10) === today) ?? [],
+    [activities, today]
+  );
   const lastRun = activities?.[0];
 
   if (isLoading) {
@@ -76,25 +84,44 @@ export default function DashboardScreen() {
           <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
             <ScreenHeader title="Dashboard" titleStyle={styles.greeting} />
 
+            {todayActivities.length > 0 && (
+              <View style={styles.todaySection}>
+                <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
+                  {todayActivities.length === 1 ? 'Activité du jour' : 'Activités du jour'}
+                </ThemedText>
+                {todayActivities.map(activity => (
+                  <LastRunCard key={activity.activityId} activity={activity} />
+                ))}
+              </View>
+            )}
+
             {trainingLoad && <ReadinessCard data={trainingLoad} />}
 
             {sleepDetail && <SleepSummaryCard sleep={sleepDetail} />}
 
             {health && (health.bodyBatteryAtWake > 0 || health.bodyBatteryChange !== 0) && (
-              <BodyBatteryCard
-                bodyBatteryAtWake={health.bodyBatteryAtWake}
-                bodyBatteryAtSleep={health.bodyBatteryAtSleep}
-                bodyBatteryChange={health.bodyBatteryChange}
-              />
+              <Pressable onPress={() => router.push('/sleep')} style={({ pressed }) => pressed && styles.pressed}>
+                <BodyBatteryCard
+                  bodyBatteryAtWake={health.bodyBatteryAtWake}
+                  bodyBatteryAtSleep={health.bodyBatteryAtSleep}
+                  bodyBatteryChange={health.bodyBatteryChange}
+                />
+              </Pressable>
             )}
 
             {stressData && stressData.overallLevel > 0 && (
               <StressCard stress={stressData} />
             )}
 
-            {lastRun && <LastRunCard activity={lastRun} />}
+            {lastRun && !todayActivities.some(a => a.activityId === lastRun.activityId) && (
+              <LastRunCard activity={lastRun} />
+            )}
 
-            {weeklyStats && <WeeklySummary stats={weeklyStats} />}
+            {weeklyStats && (
+              <Pressable onPress={() => router.push('/trends')} style={({ pressed }) => pressed && styles.pressed}>
+                <WeeklySummary stats={weeklyStats} />
+              </Pressable>
+            )}
 
             {health && (
               <View style={styles.healthSection}>
@@ -107,16 +134,19 @@ export default function DashboardScreen() {
                     value={vitals?.latestHeartRate ? `${vitals.latestHeartRate}` : health.restingHeartRate > 0 ? `${health.restingHeartRate}` : '--'}
                     unit="bpm"
                     label={vitals?.latestHeartRate ? 'Dernier BPM' : 'FC repos'}
+                    onPress={() => router.push('/heart-rate')}
                   />
                   <HealthCard
                     symbolName={{ ios: 'lungs.fill', android: 'air', web: 'air' }}
                     value={vitals?.vo2Max ? `${vitals.vo2Max}` : '--'}
                     label="VO2 max"
+                    onPress={() => router.push('/trends')}
                   />
                   <HealthCard
                     symbolName={{ ios: 'figure.walk', android: 'directions_walk', web: 'directions_walk' }}
                     value={health.steps.toLocaleString('fr-FR')}
                     label="Pas"
+                    onPress={() => router.push('/steps')}
                   />
                 </View>
                 <View style={styles.healthRow}>
@@ -125,14 +155,22 @@ export default function DashboardScreen() {
                     value={vitals?.restingHeartRate ? `${vitals.restingHeartRate}` : '--'}
                     unit="bpm"
                     label="FC repos"
+                    onPress={() => router.push('/heart-rate')}
                   />
                   <HealthCard
                     symbolName={{ ios: 'heart.text.square', android: 'ecg_heart', web: 'ecg_heart' }}
                     value={vitals?.lastSevenDaysAvgRestingHeartRate ? `${vitals.lastSevenDaysAvgRestingHeartRate}` : '--'}
                     unit="bpm"
                     label="FC moy. 7j"
+                    onPress={() => router.push('/trends')}
                   />
-                  <View style={{ flex: 1 }} />
+                  <HealthCard
+                    symbolName={{ ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' }}
+                    value={health.totalCalories > 0 ? health.totalCalories.toLocaleString('fr-FR') : '--'}
+                    unit="kcal"
+                    label="Calories"
+                    onPress={() => router.push('/calories')}
+                  />
                 </View>
                 {(hrv.latestSDNN != null || hrRecovery.bpm != null) && (
                   <View style={styles.healthRow}>
@@ -153,6 +191,7 @@ export default function DashboardScreen() {
                 )}
               </View>
             )}
+
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
@@ -185,6 +224,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: Fonts.bold,
   },
+  todaySection: {
+    gap: Spacing.two,
+  },
   healthSection: {
     gap: Spacing.two,
   },
@@ -197,5 +239,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: Spacing.two,
+  },
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
 });

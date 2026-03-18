@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VolumeChart } from '@/components/charts/volume-chart';
 import { PaceChart } from '@/components/charts/pace-chart';
 import { CalendarHeatmap } from '@/components/charts/calendar-heatmap';
+import { MetricEvolutionChart } from '@/components/charts/metric-evolution-chart';
 import { WeekComparison } from '@/components/charts/week-comparison';
 import { RacePredictions } from '@/components/race-predictions';
 import { ScreenHeader } from '@/components/screen-header';
@@ -13,6 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useHealthHistory } from '@/hooks/use-health';
 import { useTrends } from '@/hooks/use-trends';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -22,6 +24,7 @@ export default function TrendsScreen() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [weeks, setWeeks] = useState<number>(8);
   const { data, isLoading, refetch, isRefetching } = useTrends(weeks);
+  const { data: healthHistory, refetch: refetchHistory } = useHealthHistory(weeks * 7);
   const colors = useTheme();
 
   if (authLoading) {
@@ -50,7 +53,7 @@ export default function TrendsScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+            <RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); refetchHistory(); }} />
           }
         >
           <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
@@ -101,6 +104,59 @@ export default function TrendsScreen() {
                   />
                 </View>
               </>
+            )}
+
+            {healthHistory && (
+              <View style={styles.section}>
+                <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
+                  Évolution santé
+                </ThemedText>
+                {healthHistory.vo2Max.length >= 2 && (
+                  <MetricEvolutionChart
+                    data={healthHistory.vo2Max}
+                    title="VO2 Max"
+                    unit="ml/kg/min"
+                    description="Capacité aérobie maximale"
+                    color={colors.accent}
+                  />
+                )}
+                {healthHistory.restingHR.length >= 2 && (
+                  <MetricEvolutionChart
+                    data={healthHistory.restingHR}
+                    title="FC repos"
+                    unit="bpm"
+                    description="Fréquence cardiaque au repos"
+                    color="#E74C3C"
+                  />
+                )}
+                {healthHistory.steps.length >= 2 && (
+                  <MetricEvolutionChart
+                    data={healthHistory.steps}
+                    title="Pas"
+                    description="Nombre de pas quotidien"
+                    color="#3498DB"
+                    formatValue={(v) => v.toLocaleString('fr-FR')}
+                  />
+                )}
+                {healthHistory.sleepScore.length >= 2 && (
+                  <MetricEvolutionChart
+                    data={healthHistory.sleepScore}
+                    title="Score de sommeil"
+                    description="Qualité du sommeil (0-100)"
+                    color="#8B5CF6"
+                  />
+                )}
+                {healthHistory.calories && healthHistory.calories.length >= 2 && (
+                  <MetricEvolutionChart
+                    data={healthHistory.calories}
+                    title="Calories"
+                    unit="kcal"
+                    description="Calories actives brûlées"
+                    color="#F59E0B"
+                    formatValue={(v) => v.toLocaleString('fr-FR')}
+                  />
+                )}
+              </View>
             )}
           </Animated.View>
         </ScrollView>

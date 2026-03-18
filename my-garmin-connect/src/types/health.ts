@@ -1,3 +1,16 @@
+export interface MetricDataPoint {
+  date: string;
+  value: number;
+}
+
+export interface HealthHistory {
+  restingHR: MetricDataPoint[];
+  vo2Max: MetricDataPoint[];
+  steps: MetricDataPoint[];
+  sleepScore: MetricDataPoint[];
+  calories?: MetricDataPoint[];
+}
+
 export interface HealthToday {
   steps: number;
   restingHeartRate: number;
@@ -6,6 +19,8 @@ export interface HealthToday {
   bodyBatteryChange: number;
   bodyBatteryAtSleep: number;
   bodyBatteryAtWake: number;
+  totalCalories: number;
+  activeCalories: number;
 }
 
 export interface Vitals {

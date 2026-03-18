@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useTrainingLoad } from '@/hooks/use-training-load';
 import { useTheme } from '@/hooks/use-theme';
-import { getReadinessColor, formatTSB } from '@/lib/training-insights';
+import { getReadinessColor, formatTSB, getLoadLevel, formatChartDate } from '@/lib/training-insights';
 
 export default function TrainingLoadScreen() {
   const { data, isLoading, refetch, isRefetching } = useTrainingLoad();
@@ -36,10 +36,44 @@ export default function TrainingLoadScreen() {
   const ctlData = data.history.map((h) => ({ value: h.ctl, label: '' }));
   const tsbData = data.history.map((h) => ({ value: h.tsb, label: '' }));
 
-  // Show labels every 7 days
-  const labeledAtlData = atlData.map((d, i) => ({
+  // TSB Y-axis bounds — clamp outliers using percentiles
+  const tsbValues = data.history.map((h) => h.tsb);
+  const sortedTsb = [...tsbValues].sort((a, b) => a - b);
+  const tsbP5 = sortedTsb[Math.floor(sortedTsb.length * 0.05)];
+  const tsbP95 = sortedTsb[Math.floor(sortedTsb.length * 0.95)];
+  const tsbRange = tsbP95 - tsbP5 || 10;
+  const tsbMin = Math.floor(tsbP5 - tsbRange * 0.2);
+  const tsbMax = Math.ceil(tsbP95 + tsbRange * 0.2);
+  const clampedTsbData = tsbData.map((d) => ({
     ...d,
-    label: i % 7 === 0 ? data.history[i].date.slice(5) : '',
+    value: Math.max(tsbMin, Math.min(tsbMax, d.value)),
+  }));
+
+  // ATL/CTL Y-axis bounds
+  const loadValues = data.history.flatMap((h) => [h.atl, h.ctl]);
+  const sortedLoad = [...loadValues].sort((a, b) => a - b);
+  const loadP5 = sortedLoad[Math.floor(sortedLoad.length * 0.05)];
+  const loadP95 = sortedLoad[Math.floor(sortedLoad.length * 0.95)];
+  const loadRange = loadP95 - loadP5 || 10;
+  const loadMin = Math.floor(Math.min(0, loadP5 - loadRange * 0.1));
+  const loadMax = Math.ceil(loadP95 + loadRange * 0.2);
+  const clampedAtlData = atlData.map((d) => ({
+    ...d,
+    value: Math.max(loadMin, Math.min(loadMax, d.value)),
+  }));
+  const clampedCtlData = ctlData.map((d) => ({
+    ...d,
+    value: Math.max(loadMin, Math.min(loadMax, d.value)),
+  }));
+
+  // Show labels every 7 days with readable date format
+  const labeledAtlData = clampedAtlData.map((d, i) => ({
+    ...d,
+    label: i % 7 === 0 ? formatChartDate(data.history[i].date) : '',
+  }));
+  const labeledTsbData = clampedTsbData.map((d, i) => ({
+    ...d,
+    label: i % 7 === 0 ? formatChartDate(data.history[i].date) : '',
   }));
 
   return (
@@ -66,20 +100,51 @@ export default function TrainingLoadScreen() {
 
             {/* Key metrics */}
             <View style={styles.metricsRow}>
-              <MetricCard label="ATL" sublabel="Aiguë" value={data.currentATL.toFixed(1)} />
-              <MetricCard label="CTL" sublabel="Chronique" value={data.currentCTL.toFixed(1)} />
+              <MetricCard label="ATL" sublabel="Charge récente" value={data.currentATL.toFixed(1)} description={getLoadLevel(data.currentATL)} />
+              <MetricCard label="CTL" sublabel="Charge habituelle" value={data.currentCTL.toFixed(1)} description={getLoadLevel(data.currentCTL)} />
               <MetricCard
                 label="TSB"
-                sublabel="Balance"
+                sublabel="Fraîcheur"
                 value={formatTSB(data.currentTSB)}
                 valueColor={data.currentTSB >= 0 ? '#2ECC71' : '#E74C3C'}
+                description={data.currentTSB >= 0 ? 'Frais' : 'Fatigué'}
               />
             </View>
+
+            {/* Explainer */}
+            <ThemedView type="backgroundElement" style={styles.explainerCard}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.explainerLine}>
+                <ThemedText type="smallBold" themeColor="textSecondary">ATL</ThemedText> — charge des 7 derniers jours (durée × intensité cardiaque)
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.explainerLine}>
+                <ThemedText type="smallBold" themeColor="textSecondary">CTL</ThemedText> — ta moyenne sur 6 semaines, ton niveau de fond
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.explainerLine}>
+                <ThemedText type="smallBold" themeColor="textSecondary">TSB</ThemedText> — CTL − ATL : positif = frais, négatif = fatigué
+              </ThemedText>
+            </ThemedView>
+
+            {/* Insights */}
+            {data.insights.length > 0 && (
+              <ThemedView type="backgroundElement" style={styles.factorsCard}>
+                <ThemedText type="smallBold" style={[styles.chartTitle, { color: colors.accent }]}>
+                  Insights
+                </ThemedText>
+                {data.insights.map((insight, i) => (
+                  <ThemedText key={i} type="small" style={styles.insight}>
+                    {insight}
+                  </ThemedText>
+                ))}
+              </ThemedView>
+            )}
 
             {/* ATL / CTL chart */}
             <ThemedView type="backgroundElement" style={styles.chartCard}>
               <ThemedText type="smallBold" style={styles.chartTitle}>
                 Charge d'entraînement (42 jours)
+              </ThemedText>
+              <ThemedText style={styles.chartDescription} themeColor="textSecondary">
+                Rouge au-dessus de bleu = tu charges. L'inverse = récupération.
               </ThemedText>
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
@@ -93,10 +158,12 @@ export default function TrainingLoadScreen() {
               </View>
               <LineChart
                 data={labeledAtlData}
-                data2={ctlData}
+                data2={clampedCtlData}
                 color1="#E74C3C"
                 color2="#3498DB"
                 height={180}
+                maxValue={loadMax}
+                mostNegativeValue={loadMin}
                 thickness={2}
                 spacing={8}
                 yAxisThickness={0}
@@ -106,6 +173,7 @@ export default function TrainingLoadScreen() {
                 hideDataPoints
                 xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
                 yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+                yAxisLabelSuffix=" TRIMP"
                 noOfSections={4}
                 isAnimated
                 animationDuration={300}
@@ -121,9 +189,11 @@ export default function TrainingLoadScreen() {
                 Positif = frais · Négatif = fatigué
               </ThemedText>
               <LineChart
-                data={tsbData}
+                data={labeledTsbData}
                 color={colors.accent}
                 height={180}
+                maxValue={tsbMax}
+                mostNegativeValue={tsbMin}
                 thickness={2}
                 spacing={8}
                 yAxisThickness={0}
@@ -135,7 +205,11 @@ export default function TrainingLoadScreen() {
                 startFillColor={colors.accent}
                 startOpacity={0.15}
                 endOpacity={0}
+                xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
                 yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+                showReferenceLine1
+                referenceLine1Position={0}
+                referenceLine1Config={{ color: colors.textSecondary, dashWidth: 4, dashGap: 4, thickness: 1 }}
                 noOfSections={4}
                 isAnimated
                 animationDuration={300}
@@ -154,20 +228,6 @@ export default function TrainingLoadScreen() {
                 </View>
               ))}
             </ThemedView>
-
-            {/* Insights */}
-            {data.insights.length > 0 && (
-              <ThemedView type="backgroundElement" style={styles.factorsCard}>
-                <ThemedText type="smallBold" style={[styles.chartTitle, { color: colors.accent }]}>
-                  Insights
-                </ThemedText>
-                {data.insights.map((insight, i) => (
-                  <ThemedText key={i} type="small" style={styles.insight}>
-                    {insight}
-                  </ThemedText>
-                ))}
-              </ThemedView>
-            )}
         </Animated.View>
       </ScrollView>
     </ThemedView>
@@ -179,11 +239,13 @@ function MetricCard({
   sublabel,
   value,
   valueColor,
+  description,
 }: {
   label: string;
   sublabel: string;
   value: string;
   valueColor?: string;
+  description?: string;
 }) {
   return (
     <ThemedView type="backgroundElement" style={styles.metricCard}>
@@ -194,6 +256,11 @@ function MetricCard({
       <ThemedText style={styles.metricSublabel} themeColor="textSecondary" numberOfLines={1}>
         {sublabel}
       </ThemedText>
+      {description && (
+        <ThemedText style={styles.metricDescription} themeColor="textSecondary" numberOfLines={2}>
+          {description}
+        </ThemedText>
+      )}
     </ThemedView>
   );
 }
@@ -262,6 +329,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'center',
   },
+  metricDescription: {
+    fontSize: 10,
+    textAlign: 'center',
+    paddingTop: 2,
+  },
   chartCard: {
     borderRadius: 16,
     padding: Spacing.four,
@@ -269,6 +341,9 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     fontSize: 14,
+  },
+  chartDescription: {
+    fontSize: 11,
   },
   legend: {
     flexDirection: 'row',
@@ -291,6 +366,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: Spacing.four,
     gap: Spacing.two,
+  },
+  explainerCard: {
+    borderRadius: 14,
+    padding: Spacing.three,
+    gap: 6,
+  },
+  explainerLine: {
+    lineHeight: 18,
   },
   factorRow: {
     flexDirection: 'row',

@@ -30,6 +30,27 @@ export default function DashboardLayout() {
           headerTitle: 'Sommeil',
         }}
       />
+      <Stack.Screen
+        name="steps"
+        options={{
+          headerShown: true,
+          headerTitle: 'Pas',
+        }}
+      />
+      <Stack.Screen
+        name="calories"
+        options={{
+          headerShown: true,
+          headerTitle: 'Calories',
+        }}
+      />
+      <Stack.Screen
+        name="heart-rate"
+        options={{
+          headerShown: true,
+          headerTitle: 'Fréquence cardiaque',
+        }}
+      />
     </Stack>
   );
 }

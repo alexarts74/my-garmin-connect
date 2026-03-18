@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -37,9 +37,14 @@ export function PaceChart({ data }: PaceChartProps) {
 
   return (
     <ThemedView type="backgroundElement" style={styles.container}>
-      <ThemedText type="smallBold" style={styles.title}>
-        Allure moyenne (/km)
-      </ThemedText>
+      <View>
+        <ThemedText type="smallBold" style={styles.title}>
+          Allure moyenne (/km)
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Allure moyenne par semaine
+        </ThemedText>
+      </View>
       <LineChart
         data={lineData}
         color={colors.accent}
@@ -56,6 +61,13 @@ export function PaceChart({ data }: PaceChartProps) {
         endOpacity={0}
         xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
         yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+        formatYLabel={(val: string) => {
+          const mins = parseFloat(val);
+          if (isNaN(mins) || mins <= 0) return '';
+          const m = Math.floor(mins);
+          const s = Math.round((mins - m) * 60);
+          return `${m}:${s.toString().padStart(2, '0')}`;
+        }}
         noOfSections={4}
         maxValue={maxVal * 1.05}
         mostNegativeValue={minVal * 0.95}
