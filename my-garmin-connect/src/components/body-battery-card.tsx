@@ -24,15 +24,22 @@ export function BodyBatteryCard({ bodyBatteryAtWake, bodyBatteryAtSleep, bodyBat
   const wakeColor = getBatteryColor(bodyBatteryAtWake);
   const deltaSign = bodyBatteryChange > 0 ? '+' : '';
   const deltaColor = bodyBatteryChange > 0 ? '#10B981' : bodyBatteryChange < 0 ? '#F87171' : colors.textSecondary;
+  const fillPercent = Math.max(0, Math.min(100, bodyBatteryAtWake));
 
   return (
     <ThemedView type="backgroundElement" style={styles.container}>
-      <ThemedText type="smallBold" style={{ color: colors.accent }}>
-        Body Battery
-      </ThemedText>
+      {/* Header */}
+      <View style={styles.header}>
+        <ThemedText type="smallBold" style={{ color: colors.accent }}>
+          Body Battery
+        </ThemedText>
+        <ThemedText style={[styles.chevron, { color: colors.textSecondary }]}>
+          ›
+        </ThemedText>
+      </View>
 
+      {/* Main row: badge + value + delta */}
       <View style={styles.mainRow}>
-        {/* Battery icon + wake value */}
         <View style={[styles.scoreBadge, { backgroundColor: wakeColor + '20' }]}>
           <SymbolView
             name={{ ios: 'battery.100percent.bolt', android: 'battery_charging_full', web: 'battery_charging_full' }}
@@ -50,36 +57,32 @@ export function BodyBatteryCard({ bodyBatteryAtWake, bodyBatteryAtSleep, bodyBat
               au réveil
             </ThemedText>
           </View>
-
-          {/* Delta */}
-          <ThemedText style={[styles.delta, { color: deltaColor }]}>
-            {deltaSign}{bodyBatteryChange}
-          </ThemedText>
         </View>
-      </View>
 
-      {/* Sleep → Wake line */}
-      <View style={styles.flowRow}>
-        <View style={styles.flowItem}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Coucher
-          </ThemedText>
-          <ThemedText style={styles.flowValue}>
-            {bodyBatteryAtSleep}
-          </ThemedText>
-        </View>
-        <ThemedText style={[styles.flowArrow, { color: colors.textSecondary }]}>
-          →
+        <ThemedText style={[styles.delta, { color: deltaColor }]}>
+          {deltaSign}{bodyBatteryChange}
         </ThemedText>
-        <View style={styles.flowItem}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Réveil
-          </ThemedText>
-          <ThemedText style={[styles.flowValue, { color: wakeColor }]}>
-            {bodyBatteryAtWake}
-          </ThemedText>
-        </View>
       </View>
+
+      {/* Progress bar */}
+      <View style={styles.barRow}>
+        <View style={styles.barTrack}>
+          <View
+            style={[styles.barFill, {
+              width: `${fillPercent}%`,
+              backgroundColor: wakeColor,
+            }]}
+          />
+        </View>
+        <ThemedText style={styles.barLabel} themeColor="textSecondary">
+          {bodyBatteryAtWake}/100
+        </ThemedText>
+      </View>
+
+      {/* Secondary: sleep value */}
+      <ThemedText type="small" themeColor="textSecondary">
+        Coucher {bodyBatteryAtSleep}
+      </ThemedText>
     </ThemedView>
   );
 }
@@ -89,6 +92,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: Spacing.four,
     gap: Spacing.three,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  chevron: {
+    fontSize: 24,
+    fontFamily: Fonts.regular,
   },
   mainRow: {
     flexDirection: 'row',
@@ -103,6 +115,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   valueSection: {
+    flex: 1,
     gap: 2,
     overflow: 'visible',
   },
@@ -121,24 +134,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.mono,
   },
-  flowRow: {
+  barRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-    paddingTop: Spacing.two,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    gap: Spacing.two,
   },
-  flowItem: {
-    alignItems: 'center',
-    gap: 2,
+  barTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
   },
-  flowValue: {
-    fontSize: 16,
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  barLabel: {
+    fontSize: 12,
     fontFamily: Fonts.mono,
-  },
-  flowArrow: {
-    fontSize: 18,
   },
 });

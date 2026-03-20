@@ -19,6 +19,8 @@ export interface BestEffort {
   pace: number; // sec/km
   date: string;
   activityId: number;
+  source?: 'activity' | 'laps';
+  confidence?: number; // 0-1
 }
 
 export interface TrendsData {

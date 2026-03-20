@@ -1,12 +1,14 @@
-import React from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SplitsTable } from '@/components/splits-table';
+import { ShoePicker } from '@/components/shoe-picker';
 import { StatRow } from '@/components/stat-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useActivity } from '@/hooks/use-activities';
+import { useShoeForActivity, useShoeActions } from '@/hooks/use-shoes';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDate, formatDistance, formatDuration, formatPace } from '@/lib/format';
 import { useHealthKitWorkout, useHRZones } from '@/hooks/use-healthkit';
@@ -21,6 +23,11 @@ export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: activity, isLoading, error } = useActivity(id);
   const colors = useTheme();
+  const [shoePickerVisible, setShoePickerVisible] = useState(false);
+
+  const activityId = activity?.activityId;
+  const { data: linkedShoe } = useShoeForActivity(activityId);
+  const { linkShoe, unlinkShoe } = useShoeActions();
 
   const { workout: hkWorkout, loading: hkLoading } = useHealthKitWorkout(
     activity?.startTimeLocal,
@@ -58,7 +65,27 @@ export default function ActivityDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: activity.activityName }} />
+      <Stack.Screen
+        options={{
+          title: activity.activityName,
+          headerRight: () => (
+            <Pressable
+              onPress={() => setShoePickerVisible(true)}
+              style={({ pressed }) => [styles.headerShoeButton, pressed && { opacity: 0.6 }]}
+              hitSlop={8}>
+              {linkedShoe ? (
+                <ThemedText style={[styles.headerShoeName, { color: colors.accent }]} numberOfLines={1}>
+                  {linkedShoe.name}
+                </ThemedText>
+              ) : (
+                <ThemedText style={[styles.headerShoeAdd, { color: colors.textSecondary }]}>
+                  + Chaussure
+                </ThemedText>
+              )}
+            </Pressable>
+          ),
+        }}
+      />
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="subtitle">{activity.activityName}</ThemedText>
@@ -90,6 +117,25 @@ export default function ActivityDetailScreen() {
               <StatRow label="VO2 Max" value={`${activity.vO2MaxValue}`} />
             )}
           </ThemedView>
+
+          <ShoePicker
+            visible={shoePickerVisible}
+            selectedShoeId={linkedShoe?.id}
+            onSelect={(shoe) => {
+              setShoePickerVisible(false);
+              if (!activityId) return;
+              if (shoe) {
+                linkShoe.mutate({
+                  activityId,
+                  shoeId: shoe.id,
+                  distanceMeters: activity.distance,
+                });
+              } else {
+                unlinkShoe.mutate(activityId);
+              }
+            }}
+            onClose={() => setShoePickerVisible(false)}
+          />
 
           <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedText type="smallBold" style={[styles.sectionTitle, { color: colors.accent }]}>
@@ -197,5 +243,18 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     textAlign: 'center',
     padding: Spacing.four,
+  },
+  headerShoeButton: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  headerShoeName: {
+    fontSize: 14,
+    fontFamily: Fonts.semiBold,
+    maxWidth: 140,
+  },
+  headerShoeAdd: {
+    fontSize: 14,
+    fontFamily: Fonts.medium,
   },
 });

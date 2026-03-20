@@ -22,6 +22,8 @@ import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeMode } from '@/hooks/use-theme';
 import type { ThemeMode } from '@/hooks/use-theme';
 import { formatPace } from '@/lib/format';
+import { useShoes } from '@/hooks/use-shoes';
+import { ShoeCard } from '@/components/shoe-card';
 
 export default function ProfileScreen() {
   const { isAuthenticated, isLoading: authLoading, email, logout } = useAuth();
@@ -29,6 +31,7 @@ export default function ProfileScreen() {
   const colors = useTheme();
   const { mode, setMode } = useThemeMode();
   const router = useRouter();
+  const { data: shoes } = useShoes();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
@@ -166,6 +169,42 @@ export default function ProfileScreen() {
                 </ThemedView>
               </View>
             )}
+
+            {/* Equipment */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+                  MES CHAUSSURES
+                </ThemedText>
+                <Pressable
+                  onPress={() => router.push('/shoe-form')}
+                  style={({ pressed }) => [
+                    styles.addShoeButton,
+                    { backgroundColor: colors.accentSoft },
+                    pressed && { opacity: 0.6 },
+                  ]}
+                  hitSlop={8}>
+                  <SymbolView name="plus" size={14} tintColor={colors.accent} />
+                </Pressable>
+              </View>
+              {shoes && shoes.length > 0 ? (
+                <View style={styles.shoesList}>
+                  {shoes.map((shoe) => (
+                    <ShoeCard
+                      key={shoe.id}
+                      shoe={shoe}
+                      onPress={() => router.push({ pathname: '/shoe-form', params: { id: shoe.id } })}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <ThemedView type="backgroundElement" style={styles.card}>
+                  <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+                    Aucune chaussure ajoutee
+                  </ThemedText>
+                </ThemedView>
+              )}
+            </View>
 
             {/* Appearance */}
             <View style={styles.section}>
@@ -320,9 +359,24 @@ const styles = StyleSheet.create({
   section: {
     gap: Spacing.two,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   sectionTitle: {
     paddingHorizontal: Spacing.one,
     letterSpacing: 0.5,
+  },
+  addShoeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shoesList: {
+    gap: Spacing.two,
   },
   card: {
     borderRadius: 14,

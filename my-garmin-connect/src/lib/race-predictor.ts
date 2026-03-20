@@ -56,25 +56,75 @@ function vdotPredictTime(vdot: number, distance: number): number {
   return (lo + hi) / 2;
 }
 
+// Recency weight: how much to trust an effort based on age
+function recencyWeight(dateStr: string): number {
+  const ageMs = Date.now() - new Date(dateStr).getTime();
+  const weeks = ageMs / (7 * 24 * 60 * 60 * 1000);
+  if (weeks < 4) return 1.0;
+  if (weeks < 8) return 0.9;
+  if (weeks < 12) return 0.75;
+  return 0.5;
+}
+
 export function predictRaceTimes(bestEfforts: BestEffort[], vo2Max?: number | null): RacePrediction[] {
   if (bestEfforts.length === 0) return [];
-
-  // Use the best available effort (prefer longer distances for accuracy)
-  const sortedEfforts = [...bestEfforts].sort((a, b) => b.distance - a.distance);
-  const reference = sortedEfforts[0];
 
   const predictions: RacePrediction[] = [];
 
   for (const race of RACE_DISTANCES) {
-    // Use Riegel for primary prediction
-    const riegelTime = riegelPredict(reference.time, reference.distance, race.distance);
+    // Check for exact match first (effort at this distance)
+    const exact = bestEfforts.find(
+      e => e.distance >= race.distance * 0.95 && e.distance <= race.distance * 1.05
+    );
 
-    // If we have a VDOT estimate, blend it
-    let predictedTime = riegelTime;
+    if (exact) {
+      // Direct effort at this distance — use it as-is (adjusted for exact distance)
+      const adjustedTime = exact.pace * (race.distance / 1000);
+      predictions.push({
+        distance: race.distance,
+        label: race.label,
+        predictedTime: Math.round(adjustedTime),
+        predictedPace: Math.round(exact.pace),
+      });
+      continue;
+    }
+
+    // Collect predictions from all available efforts, weighted
+    const weightedPredictions: { time: number; weight: number }[] = [];
+
+    for (const effort of bestEfforts) {
+      const riegelTime = riegelPredict(effort.time, effort.distance, race.distance);
+      const confidence = effort.confidence ?? 0.7;
+      const recency = recencyWeight(effort.date);
+
+      // Prefer efforts closer in distance (shorter → extrapolate up is safer with Riegel)
+      const distRatio = effort.distance / race.distance;
+      let distanceWeight: number;
+      if (distRatio <= 1) {
+        // Shorter effort extrapolating up — good, closer is better
+        distanceWeight = distRatio; // e.g., 5K→10K = 0.5, 10K→10K = 1.0
+      } else {
+        // Longer effort extrapolating down — less reliable
+        distanceWeight = 1 / distRatio * 0.8;
+      }
+
+      const totalWeight = confidence * recency * distanceWeight;
+      if (totalWeight > 0.05) {
+        weightedPredictions.push({ time: riegelTime, weight: totalWeight });
+      }
+    }
+
+    if (weightedPredictions.length === 0) continue;
+
+    // Weighted average of all predictions
+    const totalWeight = weightedPredictions.reduce((s, p) => s + p.weight, 0);
+    let predictedTime = weightedPredictions.reduce((s, p) => s + p.time * p.weight, 0) / totalWeight;
+
+    // Blend with VDOT if available (as fallback/sanity check)
     if (vo2Max && vo2Max > 0) {
       const vdotTime = vdotPredictTime(vo2Max, race.distance);
-      // Blend: 60% Riegel, 40% VDOT
-      predictedTime = riegelTime * 0.6 + vdotTime * 0.4;
+      // 70% weighted average, 30% VDOT
+      predictedTime = predictedTime * 0.7 + vdotTime * 0.3;
     }
 
     predictions.push({

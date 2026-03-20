@@ -51,6 +51,20 @@ function RootLayoutNav() {
             presentation: 'fullScreenModal',
           }}
         />
+        <Stack.Screen
+          name="shoes"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
+        <Stack.Screen
+          name="shoe-form"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
       </Stack>
     </NavThemeProvider>
   );
